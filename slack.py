@@ -138,9 +138,5 @@ def handle_command(command, channel):
             "image_url" : image_url
         }]
 
-
-
-        
-        
     slack_client.api_call("chat.postMessage", channel=channel,attachments = attachments, text=response, as_user=True)
 
