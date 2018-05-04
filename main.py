@@ -23,10 +23,10 @@ if __name__ == "__main__":
 
             command, channel = Bot.parse_slack_output(slack_client.rtm_read())
 
-            if not flag:
-                command = "contest"
-                channel = "C319P19LJ"
-                flag = True
+            # if not flag:
+            #     command = "contest"
+            #     channel = "C319P19LJ"
+            #     flag = True
 
 
             if command and channel:

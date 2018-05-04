@@ -8,18 +8,17 @@ import requests, json
 import datetime
 from slacker import Slacker
 from slackclient import SlackClient
+import operator
 import os
 
 token = os.environ.get('CHATBOTKEY')
+
 
 slack = Slacker(token)
 slack_client = SlackClient(token)
 AT_BOT = "forcebot"
 
-def alert_every_day():
 
-    
-    pass
 
 def alert():
     url = "http://codeforces.com/api/contest.list"
@@ -65,9 +64,12 @@ def alert():
     return send_messages
     
 def helpmsg():
-    tmpmsg = "made by kerafyrm(SangRyul) \n " \
-             "ping: check whether server is alive \n " \
-             "contest: get upcoming codeforces contest information"
+    tmpmsg = "Made by Kerafyrm(SangRyul) \n " \
+             "ping: Check whether server is alive \n " \
+             "contest: Get upcoming codeforces contest information \n" \
+             "user <nickname>: Get <nickname>'s info ex) forcebot user kerafyrm \n" \
+             "addlist <nickname>: Add local competition list ex) forcebot addlist kerafyrm  \n" \
+             "showlist : Show local competiton list  \n" \
 
     return tmpmsg
 
@@ -102,6 +104,52 @@ def getUserInfo(user):
 
     return [send_messages, image_url]
 
+def setUserInfo(user):
+
+    f = open("userlist.txt", 'a')
+    f.write(user+'\n')
+    f.close()
+
+    return user + "님 경쟁리스트에 추가되었습니다."
+
+def showList():
+    f = open("userlist.txt", 'r')
+
+    text = "< CAUCHAOS 경쟁리스트 >"
+    list_set = []
+    while True:
+        line = f.readline()
+        if not line : break
+        list_set.append(line)
+        list_set =  list(set(list_set))
+
+    f.close()
+
+    query_string = ""
+    for x in list_set:
+        query_string += x
+        query_string += ";"
+
+    url = "http://codeforces.com/api/user.info"
+    payload = {'handles': query_string}
+    res = requests.get(url=url, params = payload)
+    data = json.loads(res.text)
+
+    competition_list = []
+    for x in data['result']:
+        competition_list.append((x["handle"] , x["rating"]))
+
+    competition_list = sorted(competition_list, key=lambda val : val[1], reverse=True)
+
+    data = "-< Competiton list >-\n\n"
+    i = 1
+    for x in competition_list:
+        data += (str(i)+"등  " + str(x[0]) + " : " + str(x[1]) + " 점 \n")
+        i += 1
+    return data
+
+
+
 
 def parse_slack_output(slack_rtm_output):
     #메세지 읽어들여서 bot에세 보내는지 안보내는지 확인
@@ -131,12 +179,17 @@ def handle_command(command, channel):
         response = helpmsg()
     elif command.startswith("user"):
         response, image_url = getUserInfo(params)
-
         attachments= [{
             "title": params,
             "title_link": 'http://codeforces.com/profile/' + params,
             "image_url" : image_url
         }]
+    elif command.startswith("addlist"):
+        response = setUserInfo(params)
+    elif command.startswith('showlist'):
+        response = showList()
+
+
 
     slack_client.api_call("chat.postMessage", channel=channel,attachments = attachments, text=response, as_user=True)
 
